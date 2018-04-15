@@ -1,0 +1,22 @@
+	"togsdbadverts"
+	{
+		"driver"			"mysql"
+		"host"				"YOURHOSTHERE"
+		"database"			"DB_NAME"
+		"user"				"DB_USER"
+		"pass"				"USER_PW"
+		"timeout"			"300"
+	}
+	
+	
+	======== OR ========
+	
+	"togsdbadverts"
+	{
+		"driver"			"sqlite"
+		"host"				"localhost"
+		"database"			"tpr_db"
+		"user"				"root"
+		"pass"				""
+	}
+	

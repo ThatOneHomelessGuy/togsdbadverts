@@ -1,0 +1,28 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+HOW TO SET UP DATABASE ADVERTS FOR EACH SERVER
+
+After running the plugin the first time, it will create a database. As each server runs the plugin, they create a new column in the database that is: IP_PORT.
+
+Any setup (row) you make is enabled (1) or disabled (0) by putting a 1 or 0 in the column with that servers IP_PORT.
+
+When you insert a row:
+	id							Leave this blank. It will be added automatically
+	svrmsg						Put the server message (advertisement) here
+	msgorder					Optional. Put in numbers for each setup here to order them.
+	colorcode					Optional. Put colors here. See below for inputs.
+	12.345.67.890_270215		A column like this is added for each server that runs the plugin. Put a 0 (disabled) or 1 (enabled) in a servers column to enable this add on that server.
+
+
+COLOR SETTINGS EXPLANATION:
+	INSURGENCY COLORS:
+		1 - White                2 - Team Colors          3 - Lime Green          4 - Light Green
+		5 - Olive Black          6 - Banana Yellow        7 - Dark Yellow         8 - Grey
+
+	CS:GO COLORS:
+		1 - White                2 - Dark Red          3 - Team Colors          4 - Lime Green
+		5 - Light Green          6 - Olive             7 - Light Red            8 - Grey
+		9 - Yellow              10 - Light Blue       11 - Blue                12 - Dark Blue
+		13 - Another Blue        14 - Purple           15 - Orange Red
+
+	ALL OTHER GAMES:
+		Use hex code. e.g. Red = FF0000. To generate hex code, use a website like http://www.colorpicker.com/
