@@ -13,7 +13,7 @@
 #include <regex>
 #include <autoexecconfig> //https://github.com/Impact123/AutoExecConfig or http://www.togcoding.com/showthread.php?p=1862459
 
-#define PLUGIN_VERSION "1.2.0"
+#define PLUGIN_VERSION "1.3.0"
 
 #pragma newdecls required
 
@@ -22,7 +22,6 @@ ConVar g_cHibernateCVar = null;
 
 Database g_oDatabase = null;
 ArrayList g_aAdverts = null;
-ArrayList g_aAdvertColors = null;
 Regex g_oRegexHex;
 
 char g_sServerIP[64] = "";
@@ -76,8 +75,7 @@ public void OnPluginStart()
 	GetServerIP();
 	SetDBHandle();
 	
-	g_aAdverts = new ArrayList(128);
-	g_aAdvertColors = new ArrayList(10);
+	g_aAdverts = new ArrayList(256);
 	
 	CreateTimer(5.0, TimerCB_GetAds, _, TIMER_FLAG_NO_MAPCHANGE|TIMER_REPEAT);
 }
@@ -155,15 +153,6 @@ public void OnMapStart()
 	}
 }
 
-void GetServerAds()
-{
-	g_aAdverts.Clear();
-	g_aAdvertColors.Clear();
-	char sQuery[200];
-	Format(sQuery, sizeof(sQuery), "SELECT `svrmsg`, `colorcode` FROM `tdba_msgs` WHERE `%s` = 1 ORDER BY `msgorder`;", g_sServerIP);
-	g_oDatabase.Query(SQLCallback_ParseAdverts, sQuery, 2);
-}
-
 public Action TimerCB_DisplayAdvert(Handle hTimer, any iTimerValidation)
 {
 	if(iTimerValidation != g_iTimerValidation)
@@ -175,14 +164,21 @@ public Action TimerCB_DisplayAdvert(Handle hTimer, any iTimerValidation)
 	{
 		g_iAdvert = 0;
 	}
-	char sBuffer[128], sColor[10];
+	char sBuffer[256], sColor[10];
 	g_aAdverts.GetString(g_iAdvert, sBuffer, sizeof(sBuffer));
-	g_aAdvertColors.GetString(g_iAdvert, sColor, sizeof(sColor));
-	ConvertColor(sColor, sizeof(sColor));
 	PrintToChatAll(" %s%s", sColor, sBuffer);
 	return Plugin_Continue;
 }
 
+void GetServerAds()
+{
+	g_aAdverts.Clear();
+	char sQuery[200];
+	Format(sQuery, sizeof(sQuery), "SELECT `svrmsg` FROM `tdba_msgs` WHERE `%s` = 1 ORDER BY `msgorder`;", g_sServerIP);
+	g_oDatabase.Query(SQLCallback_ParseAdverts, sQuery, 2);
+}
+
+/*
 void ConvertColor(char[] sString, int iSize)
 {
 	if(StrEqual(sString, "", false))
@@ -304,7 +300,7 @@ void ConvertColor(char[] sString, int iSize)
 	{
 		Format(sString, iSize, "\x07%s", sString);
 	}
-}
+}*/
 
 public void SQLCallback_ParseAdverts(Handle hOwner, Handle hHndl, const char[] sError, any iValue)
 {
@@ -315,7 +311,7 @@ public void SQLCallback_ParseAdverts(Handle hOwner, Handle hHndl, const char[] s
 	
 	if(SQL_GetRowCount(hHndl) != 0)
 	{
-		char sBuffer[128];
+		char sBuffer[256];
 
 		for(int i = 0; i < SQL_GetRowCount(hHndl); i++)
 		{
@@ -323,16 +319,178 @@ public void SQLCallback_ParseAdverts(Handle hOwner, Handle hHndl, const char[] s
 			SQL_FetchString(hHndl, 0, sBuffer, sizeof(sBuffer));
 			if(!StrEqual(sBuffer, "", false))
 			{
+				ConvertColors(sBuffer, sizeof(sBuffer));
 				g_aAdverts.PushString(sBuffer);
-				SQL_FetchString(hHndl, 1, sBuffer, sizeof(sBuffer));
-				if((IsNumeric(sBuffer) && (g_bCSGO || g_bIns)) || (IsValidHex(sBuffer) && !g_bCSGO && !g_bIns && (strlen(sBuffer) == 6)))
-				{
-					g_aAdvertColors.PushString(sBuffer);
-				}
-				else
-				{
-					g_aAdvertColors.PushString("none");
-				}
+			}
+		}
+	}
+}
+
+void ConvertColors(char[] sMsg, int iSize)
+{
+	int iPos = StrContains(sMsg, "{COLOR:", false);
+	if(iPos != -1)
+	{
+		if(g_bCSGO)
+		{
+			char sReplace[11];
+			char sReplaceWith[5];
+			char sColor[3];
+			do
+			{
+				sReplace = "";
+				sColor = "";
+				sReplaceWith = "";
+				Format(sColor, sizeof(sColor), "%s%s", sColor, sMsg[iPos + 7]);
+				Format(sReplace, sizeof(sReplace), "%s%s", sReplace, sMsg[iPos]);
+				ReplaceColorCSGO(sColor, sReplaceWith, sizeof(sReplaceWith));
+				ReplaceString(sMsg, iSize, sReplace, sReplaceWith, false);
+				iPos = StrContains(sMsg, "{COLOR:", false);
+			}
+			while(iPos != -1);
+
+			Format(sMsg, iSize, " %s", sMsg);
+		}
+		else if(g_bIns)
+		{
+			char sReplace[11];
+			char sReplaceWith[5];
+			char sColor[3];
+			do
+			{
+				sReplace = "";
+				sColor = "";
+				sReplaceWith = "";
+				Format(sColor, sizeof(sColor), "%s%s", sColor, sMsg[iPos + 7]);
+				Format(sReplace, sizeof(sReplace), "%s%s", sReplace, sMsg[iPos]);
+				ReplaceColorIns(sColor, sReplaceWith, sizeof(sReplaceWith));
+				ReplaceString(sMsg, iSize, sReplace, sReplaceWith, false);
+				iPos = StrContains(sMsg, "{COLOR:", false);
+			}
+			while(iPos != -1);
+		}
+		else
+		{
+			char sReplace[15];
+			char sReplaceWith[10];
+			char sColor[7];
+			do
+			{
+				sReplace = "";
+				sColor = "";
+				sReplaceWith = "";
+				Format(sColor, sizeof(sColor), "%s%s", sColor, sMsg[iPos + 7]);
+				Format(sReplace, sizeof(sReplace), "%s%s", sReplace, sMsg[iPos]);
+				Format(sReplaceWith, sizeof(sReplaceWith), "\x07%s", sColor);
+				ReplaceString(sMsg, iSize, sReplace, sReplaceWith, false);
+				iPos = StrContains(sMsg, "{COLOR:", false);
+			}
+			while(iPos != -1);
+		}
+	}
+}
+
+void ReplaceColorCSGO(char[] sColor, char[] sReplaceWith, int iSize)
+{
+	if(StrEqual(sColor, "01", false))
+	{
+		Format(sReplaceWith, iSize, "\x01");
+	}
+	else if(StrEqual(sColor, "02", false))
+	{
+		Format(sReplaceWith, iSize, "\x02");
+	}
+	else if(StrEqual(sColor, "03", false))
+	{
+		Format(sReplaceWith, iSize, "\x03");
+	}
+	else if(StrEqual(sColor, "04", false))
+	{
+		Format(sReplaceWith, iSize, "\x04");
+	}
+	else if(StrEqual(sColor, "05", false))
+	{
+		Format(sReplaceWith, iSize, "\x05");
+	}
+	else if(StrEqual(sColor, "06", false))
+	{
+		Format(sReplaceWith, iSize, "\x06");
+	}
+	else if(StrEqual(sColor, "07", false))
+	{
+		Format(sReplaceWith, iSize, "\x07");
+	}
+	else if(StrEqual(sColor, "08", false))
+	{
+		Format(sReplaceWith, iSize, "\x08");
+	}
+	else if(StrEqual(sColor, "09", false))
+	{
+		Format(sReplaceWith, iSize, "\x09");
+	}
+	else if(StrEqual(sColor, "0A", false))
+	{
+		Format(sReplaceWith, iSize, "\x0A");
+	}
+	else if(StrEqual(sColor, "0B", false))
+	{
+		Format(sReplaceWith, iSize, "\x0B");
+	}
+	else if(StrEqual(sColor, "0C", false))
+	{
+		Format(sReplaceWith, iSize, "\x0C");
+	}
+	else if(StrEqual(sColor, "0D", false))
+	{
+		Format(sReplaceWith, iSize, "\x0D");
+	}
+	else if(StrEqual(sColor, "0E", false))
+	{
+		Format(sReplaceWith, iSize, "\x0E");
+	}
+	else if(StrEqual(sColor, "0F", false))
+	{
+		Format(sReplaceWith, iSize, "\x0F");
+	}
+	else if(StrEqual(sColor, "10", false))
+	{
+		Format(sReplaceWith, iSize, "\x10");
+	}
+}
+
+void ReplaceColorIns(char[] sColor, char[] sReplaceWith, int iSize)
+{
+	if(strlen(sColor) <= 3)
+	{
+		switch(StringToInt(sColor))
+		{
+			case 1:	//white
+			{
+				Format(sReplaceWith, iSize, "\x01");
+			}
+			case 2:	//team
+			{
+				Format(sReplaceWith, iSize, "\x03");
+			}
+			case 3:	//lime
+			{
+				Format(sReplaceWith, iSize, "\x04");
+			}
+			case 4:	//light green
+			{
+				Format(sReplaceWith, iSize, "\x05");
+			}
+			case 5:	//olive
+			{
+				Format(sReplaceWith, iSize, "\x06");
+			}
+			case 6:	//banana yellow
+			{
+				Format(sReplaceWith, iSize, "\x11");
+			}
+			case 7:	//Dark yellow
+			{
+				Format(sReplaceWith, iSize, "\x12");
 			}
 		}
 	}
@@ -379,11 +537,11 @@ public void SQLCallback_Connect(Database oDB, const char[] sError, any data)
 		
 		if(StrEqual(sDriver, "sqlite"))
 		{
-			Format(sQuery, sizeof(sQuery), "CREATE TABLE IF NOT EXISTS `tdba_msgs` (`id` INT(20) PRIMARY KEY, `svrmsg` VARCHAR(128) NOT NULL, `msgorder` INT(10) NULL, `colorcode` VARCHAR(10) NULL)");
+			Format(sQuery, sizeof(sQuery), "CREATE TABLE IF NOT EXISTS `tdba_msgs` (`id` INT(20) PRIMARY KEY, `svrmsg` VARCHAR(256) NOT NULL, `msgorder` INT(10) NULL)");
 		}
 		else
 		{
-			Format(sQuery, sizeof(sQuery), "CREATE TABLE IF NOT EXISTS `tdba_msgs` (`id` INT(20) NOT NULL AUTO_INCREMENT, `svrmsg` VARCHAR(128) NOT NULL, `msgorder` INT(10) NULL, `colorcode` VARCHAR(10) NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=latin1 AUTO_INCREMENT=1");
+			Format(sQuery, sizeof(sQuery), "CREATE TABLE IF NOT EXISTS `tdba_msgs` (`id` INT(20) NOT NULL AUTO_INCREMENT, `svrmsg` VARCHAR(256) NOT NULL, `msgorder` INT(10) NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=latin1 AUTO_INCREMENT=1");
 		}
 		g_oDatabase.Query(SQLCallback_Void, sQuery, 1);
 
@@ -438,4 +596,8 @@ CHANGELOG:
 		- Converted to new syntax.
 		- Removed CVar for database table name.
 		- Changed database default to enable newly added msgs for all servers.
+	1.3.0
+		- Added dynamic replacement of inline colors to support multiple colors in a message.
+		- Increased message buffer to allow for inline colors.
+		- Removed database field `colorcode` due to adding inline colors.
 */
