@@ -13,7 +13,7 @@
 #include <regex>
 #include <autoexecconfig> //https://github.com/Impact123/AutoExecConfig or http://www.togcoding.com/showthread.php?p=1862459
 
-#define PLUGIN_VERSION "1.3.0"
+#define PLUGIN_VERSION "1.3.1"
 
 #pragma newdecls required
 
@@ -380,6 +380,10 @@ void ConvertColors(char[] sMsg, int iSize)
 				sColor = "";
 				sReplaceWith = "";
 				Format(sColor, sizeof(sColor), "%s%s", sColor, sMsg[iPos + 7]);
+				if(!IsValidHex(sColor))
+				{
+					LogError("Invalid hex code specified in chat message! Hex code: %s", sColor);
+				}
 				Format(sReplace, sizeof(sReplace), "%s%s", sReplace, sMsg[iPos]);
 				Format(sReplaceWith, sizeof(sReplaceWith), "\x07%s", sColor);
 				ReplaceString(sMsg, iSize, sReplace, sReplaceWith, false);
@@ -392,74 +396,89 @@ void ConvertColors(char[] sMsg, int iSize)
 
 void ReplaceColorCSGO(char[] sColor, char[] sReplaceWith, int iSize)
 {
-	if(StrEqual(sColor, "01", false))
+	if(IsNumeric(sColor) == false)
 	{
-		Format(sReplaceWith, iSize, "\x01");
+		LogError("Non-numeric color code encountered for CS:GO! Color code: %s", sColor);
+		return;
 	}
-	else if(StrEqual(sColor, "02", false))
+	
+	switch(StringToInt(sColor))
 	{
-		Format(sReplaceWith, iSize, "\x02");
-	}
-	else if(StrEqual(sColor, "03", false))
-	{
-		Format(sReplaceWith, iSize, "\x03");
-	}
-	else if(StrEqual(sColor, "04", false))
-	{
-		Format(sReplaceWith, iSize, "\x04");
-	}
-	else if(StrEqual(sColor, "05", false))
-	{
-		Format(sReplaceWith, iSize, "\x05");
-	}
-	else if(StrEqual(sColor, "06", false))
-	{
-		Format(sReplaceWith, iSize, "\x06");
-	}
-	else if(StrEqual(sColor, "07", false))
-	{
-		Format(sReplaceWith, iSize, "\x07");
-	}
-	else if(StrEqual(sColor, "08", false))
-	{
-		Format(sReplaceWith, iSize, "\x08");
-	}
-	else if(StrEqual(sColor, "09", false))
-	{
-		Format(sReplaceWith, iSize, "\x09");
-	}
-	else if(StrEqual(sColor, "0A", false))
-	{
-		Format(sReplaceWith, iSize, "\x0A");
-	}
-	else if(StrEqual(sColor, "0B", false))
-	{
-		Format(sReplaceWith, iSize, "\x0B");
-	}
-	else if(StrEqual(sColor, "0C", false))
-	{
-		Format(sReplaceWith, iSize, "\x0C");
-	}
-	else if(StrEqual(sColor, "0D", false))
-	{
-		Format(sReplaceWith, iSize, "\x0D");
-	}
-	else if(StrEqual(sColor, "0E", false))
-	{
-		Format(sReplaceWith, iSize, "\x0E");
-	}
-	else if(StrEqual(sColor, "0F", false))
-	{
-		Format(sReplaceWith, iSize, "\x0F");
-	}
-	else if(StrEqual(sColor, "10", false))
-	{
-		Format(sReplaceWith, iSize, "\x10");
+		case 1:
+		{
+			Format(sReplaceWith, iSize, "\x01");
+		}
+		case 2:
+		{
+			Format(sReplaceWith, iSize, "\x02");
+		}
+		case 3:
+		{
+			Format(sReplaceWith, iSize, "\x03");
+		}
+		case 4:
+		{
+			Format(sReplaceWith, iSize, "\x04");
+		}
+		case 5:
+		{
+			Format(sReplaceWith, iSize, "\x05");
+		}
+		case 6:
+		{
+			Format(sReplaceWith, iSize, "\x06");
+		}
+		case 7:
+		{
+			Format(sReplaceWith, iSize, "\x07");
+		}
+		case 8:
+		{
+			Format(sReplaceWith, iSize, "\x08");
+		}
+		case 9:
+		{
+			Format(sReplaceWith, iSize, "\x09");
+		}
+		case 10:
+		{
+			Format(sReplaceWith, iSize, "\x0A");
+		}
+		case 11:
+		{
+			Format(sReplaceWith, iSize, "\x0B");
+		}
+		case 12:
+		{
+			Format(sReplaceWith, iSize, "\x0C");
+		}
+		case 13:
+		{
+			Format(sReplaceWith, iSize, "\x0D");
+		}
+		case 14:
+		{
+			Format(sReplaceWith, iSize, "\x0E");
+		}
+		case 15:
+		{
+			Format(sReplaceWith, iSize, "\x0F");
+		}
+		case 16:
+		{
+			Format(sReplaceWith, iSize, "\x10");
+		}
 	}
 }
 
 void ReplaceColorIns(char[] sColor, char[] sReplaceWith, int iSize)
 {
+	if(IsNumeric(sColor) == false)
+	{
+		LogError("Non-numeric color code encountered for Insurgency! Color code: %s", sColor);
+		return;
+	}
+	
 	if(strlen(sColor) <= 3)
 	{
 		switch(StringToInt(sColor))
@@ -600,4 +619,7 @@ CHANGELOG:
 		- Added dynamic replacement of inline colors to support multiple colors in a message.
 		- Increased message buffer to allow for inline colors.
 		- Removed database field `colorcode` due to adding inline colors.
+	1.3.1
+		- Added back valid hex code check.
+		- Change color selection to use switch statement (more efficient) for CS:GO and use numbers only.
 */
