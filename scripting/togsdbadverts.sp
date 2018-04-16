@@ -13,7 +13,7 @@
 #include <regex>
 #include <autoexecconfig> //https://github.com/Impact123/AutoExecConfig or http://www.togcoding.com/showthread.php?p=1862459
 
-#define PLUGIN_VERSION "1.3.1"
+#define PLUGIN_VERSION "1.3.2"
 
 #pragma newdecls required
 
@@ -560,7 +560,7 @@ public void SQLCallback_Connect(Database oDB, const char[] sError, any data)
 		}
 		else
 		{
-			Format(sQuery, sizeof(sQuery), "CREATE TABLE IF NOT EXISTS `tdba_msgs` (`id` INT(20) NOT NULL AUTO_INCREMENT, `svrmsg` VARCHAR(256) NOT NULL, `msgorder` INT(10) NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=latin1 AUTO_INCREMENT=1");
+			Format(sQuery, sizeof(sQuery), "CREATE TABLE IF NOT EXISTS `tdba_msgs` (`id` INT(20) NOT NULL AUTO_INCREMENT, `svrmsg` VARCHAR(256) NOT NULL, `msgorder` INT(10) NULL, PRIMARY KEY (`id`)) DEFAULT CHARSET=utf8 DEFAULT COLLATE utf8_general_ci AUTO_INCREMENT=1");
 		}
 		g_oDatabase.Query(SQLCallback_Void, sQuery, 1);
 
@@ -622,4 +622,6 @@ CHANGELOG:
 	1.3.1
 		- Added back valid hex code check.
 		- Change color selection to use switch statement (more efficient) for CS:GO and use numbers only.
+	1.3.2
+		- Changed database default char set from latin1 to utf8.
 */
