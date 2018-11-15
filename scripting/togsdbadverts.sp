@@ -13,7 +13,7 @@
 #include <regex>
 #include <autoexecconfig> //https://github.com/Impact123/AutoExecConfig or http://www.togcoding.com/showthread.php?p=1862459
 
-#define PLUGIN_VERSION "1.3.2"
+#define PLUGIN_VERSION "1.3.3"
 
 #pragma newdecls required
 
@@ -114,8 +114,11 @@ public void OnConfigsExecuted()
 	
 	GetServerIP();
 	g_cHibernateCVar = FindConVar("sv_hibernate_when_empty");
-	SetConVarInt(g_cHibernateCVar, 0);
-	g_cHibernateCVar.AddChangeHook(OnCVarChange);
+	if(g_cHibernateCVar != null)
+	{
+		SetConVarInt(g_cHibernateCVar, 0);
+		g_cHibernateCVar.AddChangeHook(OnCVarChange);
+	}
 }
 
 public Action TimerCB_GetAds(Handle hTimer)
@@ -159,14 +162,26 @@ public Action TimerCB_DisplayAdvert(Handle hTimer, any iTimerValidation)
 	{
 		return Plugin_Stop;
 	}
-	g_iAdvert++;
-	if(g_iAdvert >= g_aAdverts.Length)
+	
+	if(g_aAdverts.Length)
 	{
-		g_iAdvert = 0;
+		g_iAdvert++;
+		if(g_iAdvert >= g_aAdverts.Length)
+		{
+			g_iAdvert = 0;
+		}
+		char sBuffer[256], sColor[10];
+		g_aAdverts.GetString(g_iAdvert, sBuffer, sizeof(sBuffer));
+		if(g_bCSGO)
+		{
+			PrintToChatAll(" \x01%s%s", sColor, sBuffer);
+		}
+		else
+		{
+			PrintToChatAll("\x01%s%s", sColor, sBuffer);
+		}
 	}
-	char sBuffer[256], sColor[10];
-	g_aAdverts.GetString(g_iAdvert, sBuffer, sizeof(sBuffer));
-	PrintToChatAll(" %s%s", sColor, sBuffer);
+	
 	return Plugin_Continue;
 }
 
@@ -624,4 +639,8 @@ CHANGELOG:
 		- Change color selection to use switch statement (more efficient) for CS:GO and use numbers only.
 	1.3.2
 		- Changed database default char set from latin1 to utf8.
+	1.3.3
+		- Edit to account for if sv_hibernate_when_empty doesnt exist.
+		- Edit to fix error that occurs if no messages apply to the server.
+		- Edit to remove leading space if not CSGO.
 */
