@@ -13,7 +13,7 @@
 #include <regex>
 #include <autoexecconfig> //https://github.com/Impact123/AutoExecConfig or http://www.togcoding.com/showthread.php?p=1862459
 
-#define PLUGIN_VERSION "1.3.3"
+#define PLUGIN_VERSION "1.3.4"
 
 #pragma newdecls required
 
@@ -29,6 +29,7 @@ int g_iTimerValidation = 1;	//validation for if timer is disabled via tdba_updat
 int g_iAdvert = -1;	//tracks which advert in the ADT array was last displayed.
 bool g_bCSGO = false;
 bool g_bIns = false;
+bool g_bDBConnInProg = false;
 
 public Plugin myinfo =
 {
@@ -100,17 +101,9 @@ public void OnCVarChange(ConVar hCVar, const char[] sOldValue, const char[] sNew
 	}
 }
 
-public void OnAutoConfigsBuffered()
-{
-	SetDBHandle();
-}
-
 public void OnConfigsExecuted()
 {
-	if(g_oDatabase == null)
-	{
-		SetDBHandle();
-	}
+	SetDBHandle();
 	
 	GetServerIP();
 	g_cHibernateCVar = FindConVar("sv_hibernate_when_empty");
@@ -541,15 +534,17 @@ bool IsValidHex(const char[] sHex)
 
 void SetDBHandle()
 {
-	
-	if(g_oDatabase != null)
+	if(!g_bDBConnInProg)
 	{
-		delete g_oDatabase;
-		g_oDatabase = null;
+		if(g_oDatabase != null)
+		{
+			delete g_oDatabase;
+			g_oDatabase = null;
+		}
+		LogMessage("Establishing database connection for togsdbadverts.");
+		g_bDBConnInProg = true;
+		Database.Connect(SQLCallback_Connect, "togsdbadverts");
 	}
-	
-	LogMessage("Establishing database connection for togsdbadverts.");
-	Database.Connect(SQLCallback_Connect, "togsdbadverts");
 }
 
 public void SQLCallback_Connect(Database oDB, const char[] sError, any data)
@@ -561,6 +556,7 @@ public void SQLCallback_Connect(Database oDB, const char[] sError, any data)
 	else
 	{
 		g_oDatabase = oDB;
+		g_bDBConnInProg = false;
 		
 		char sDriver[64], sQuery[600];
 		DBDriver oDriver = g_oDatabase.Driver;
@@ -643,4 +639,6 @@ CHANGELOG:
 		- Edit to account for if sv_hibernate_when_empty doesnt exist.
 		- Edit to fix error that occurs if no messages apply to the server.
 		- Edit to remove leading space if not CSGO.
+	1.3.4
+		- Edit to database connection to add some checks I use in other plugins. This was added due to a report of multiple simultaneous MySQL connections.
 */
